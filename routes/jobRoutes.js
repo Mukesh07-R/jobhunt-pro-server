@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/auth");
+const auth = require("../Middleware/auth");
 const Job = require("../models/Job");
 
 //  Add Job Route
