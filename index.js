@@ -16,7 +16,7 @@ const app = express();
 // ✅ CORS setup (allow frontend domain)
 app.use(
   cors({
-    origin: "https://jobhunt-pro-client-fpfm.vercel.app", // your Vercel frontend
+    origin: "https://jobhunt-pro-client.vercel.app/",       // your Vercel frontend
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
@@ -116,5 +116,5 @@ app.use("/api/jobs", jobRoutes);
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(` Server running on http://localhost:${PORT}`);
 });
