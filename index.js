@@ -5,14 +5,23 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const jobRoutes = require('./routes/jobRoutes');
+const jobRoutes = require("./routes/jobRoutes");
 const User = require("./models/User");
 
 dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+
+// ✅ CORS setup (allow frontend domain)
+app.use(
+  cors({
+    origin: "https://jobhunt-pro-client-fpfm.vercel.app", // your Vercel frontend
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Serve frontend if needed
@@ -23,8 +32,10 @@ app.get("/", (req, res) => {
   res.send("JobHunt Pro API is running");
 });
 
+// ====================== AUTH ROUTES ======================
+
 // ✅ Register Route
-app.post("/register", async (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -54,7 +65,7 @@ app.post("/register", async (req, res) => {
 });
 
 // ✅ Login Route
-app.post("/login", async (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -71,7 +82,7 @@ app.post("/login", async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
-    
+
     res.json({ token });
   } catch (err) {
     console.error(err);
@@ -79,8 +90,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ✅ Token Verification Route (new)
-app.get("/api/verify-token", (req, res) => {
+// ✅ Token Verification Route
+app.get("/api/auth/verify-token", (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -90,18 +101,20 @@ app.get("/api/verify-token", (req, res) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    jwt.verify(token, process.env.JWT_SECRET);
     return res.status(200).json({ valid: true });
   } catch (err) {
-    return res.status(401).json({ valid: false, message: "Invalid or expired token" });
+    return res
+      .status(401)
+      .json({ valid: false, message: "Invalid or expired token" });
   }
 });
 
-// ✅ Job Routes (protected)
+// ====================== JOB ROUTES ======================
 app.use("/api/jobs", jobRoutes);
 
 // ✅ Start server
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
