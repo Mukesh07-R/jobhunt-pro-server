@@ -13,10 +13,15 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS setup (allow frontend domain)
+// ✅ CORS setup (allow both localhost and Vercel frontend)
+const allowedOrigins = [
+  "http://localhost:3000", // local dev
+  "https://jobhunt-pro-client.vercel.app" // deployed frontend (NO trailing slash)
+];
+
 app.use(
   cors({
-    origin: "https://jobhunt-pro-client.vercel.app/",       // your Vercel frontend
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
