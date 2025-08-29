@@ -13,15 +13,21 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS setup (allow both localhost and Vercel frontend)
+// ✅ CORS setup (allow both localhost and deployed frontend)
 const allowedOrigins = [
   "http://localhost:3000", // local dev
-  "https://jobhunt-pro-client.vercel.app" // deployed frontend (NO trailing slash)
+  "https://jobhunt-pro-client.vercel.app" // deployed frontend
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
@@ -29,39 +35,27 @@ app.use(
 
 app.use(express.json());
 
-// Serve frontend if needed
-app.use(express.static("public"));
-
 // ✅ Health check
 app.get("/", (req, res) => {
-  res.send("JobHunt Pro API is running");
+  res.send("JobHunt Pro API is running ✅");
 });
 
 // ====================== AUTH ROUTES ======================
 
-// ✅ Register Route
+// Register
 app.post("/api/auth/register", async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Email and password required");
-  }
+  if (!email || !password) return res.status(400).send("Email and password required");
 
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).send("User already exists");
-    }
+    if (existingUser) return res.status(409).send("User already exists");
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ email, password: hashedPassword });
     await newUser.save();
 
-    // Generate token on successful register
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
     res.status(201).json({ token });
   } catch (err) {
     console.error(err);
@@ -69,13 +63,10 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// ✅ Login Route
+// Login
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Email and password required");
-  }
+  if (!email || !password) return res.status(400).send("Email and password required");
 
   try {
     const user = await User.findOne({ email });
@@ -84,10 +75,7 @@ app.post("/api/auth/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).send("Invalid credentials");
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
     res.json({ token });
   } catch (err) {
     console.error(err);
@@ -95,31 +83,25 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ✅ Token Verification Route
+// Verify Token
 app.get("/api/auth/verify-token", (req, res) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith("Bearer "))
     return res.status(401).json({ valid: false, message: "No token provided" });
-  }
 
   const token = authHeader.split(" ")[1];
 
   try {
     jwt.verify(token, process.env.JWT_SECRET);
-    return res.status(200).json({ valid: true });
+    res.status(200).json({ valid: true });
   } catch (err) {
-    return res
-      .status(401)
-      .json({ valid: false, message: "Invalid or expired token" });
+    res.status(401).json({ valid: false, message: "Invalid or expired token" });
   }
 });
 
 // ====================== JOB ROUTES ======================
 app.use("/api/jobs", jobRoutes);
 
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
